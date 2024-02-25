@@ -36,7 +36,7 @@ Oh, right! Where's our data documentation? Here it is:
 | origin        | `chr`  | origin airport (all EWR, nothing to see)        |
 | destination   | `chr`  | destination airport (all MSP, nothing to see)   |
 | sun_country   | `chr`  | whether Sun Country Airlines is the cheapest option for that day (`yes` or `no`) |
-| date_recorded | `Date` | date the price was "observed" (in the format `mm-dd-yyyy`) |
+| date_recorded | `Date` | date the price was "observed"                   |
 
 
 ```{r}
@@ -57,9 +57,9 @@ d$date_recorded <- as.Date(d$date_recorded, "%m-%d-%Y")
 # discard rows where sun_country is yes, and add label for plotly hover text
 d <- d %>% 
   filter(sun_country == 'no') %>%
-    mutate(label = paste0('Date recorded: ', date_recorded,
-                          '\nDays before: ', days_before,
-                          '\n<b>Lowest price: $', lowest_price,'</b>')) 
+    mutate(txtlabel = paste0('Recorded: ', date_recorded,
+                             '\nDays before: ', days_before,
+                             '\n<b>Lowest price: $', lowest_price,'</b>')) 
 d %>% 
   select(flight_date, days_before, lowest_price, date_recorded) %>%
   head()
@@ -80,6 +80,7 @@ I'll also make a subset of the data that only contains the observations that are
 
 # discard "middle" prices
 nomids <- d %>%
+  filter(date_recorded <= '2024-02-23') %>%
   group_by(flight_date) %>%
   mutate(prev = lag(lowest_price), follow = lead(lowest_price)) %>%
   mutate(keep = (prev %!=na% lowest_price | follow %!=na% lowest_price)) %>%
@@ -88,11 +89,11 @@ nomids <- d %>%
 ```
 
 
-# Plots!
+# Plotting Time
 
 ## Flight Prices vs. Time Before Departure
 
-Oof, this is a lot of code. I'm going to try to make this as interactive as possible, so I'm using the `plotly` package to make this graph. I'm going to plot the lowest price for each day against the number of days before the flight. I'm also going to include a few purple horizontal lines ($120, $140, and $160) to indicate the price range that I'm willing to pay for a one-way ticket. 
+Oof, this is a lot of code. I'm going to try to make this as interactive as possible, so I'm using the `plotly` package that enables a text bubble to appear when you hover your cursor over the lines. Here, I plot the lowest price for each day against the number of days before the departure date that it was recorded. I'm also going to include a few purple horizontal lines ($120, $140, and $160) to indicate the price range that I'm willing to pay for a one-way ticket. 
 
 Hovering over the lines/markers will show how many days before departure date and the cheapest price before recorded.
 
@@ -100,38 +101,46 @@ Hovering over the lines/markers will show how many days before departure date an
 maxdays  <- max(d[!is.na(d$lowest_price),]$days_before)
 maxweeks <- maxdays - (maxdays %% 7)
 xlabels  <- (maxweeks/7):0
+axis_font <- list(size = 18)
+
 g <- (d %>%
-        filter(!is.na(lowest_price)) %>%
+        filter(!is.na(lowest_price), date_recorded <= '2024-02-23') %>%
         ggplot(aes(group = 1)) +
+        geom_vline(xintercept = 1:15 * 7, color = 'lightgrey', size = .3) +
         geom_hline(yintercept = c(120,140,160), linetype = "longdash", color = "purple") +
-        geom_text(aes(x = 10.5, y = 122, label = scales::dollar(120)), 
+        geom_text(aes(x = 10.5, y = 123, label = scales::dollar(120)), 
                   colour="purple", text = element_text(size=11), show.legend = F) +
-        geom_text(aes(x = 10.5, y = 142, label = scales::dollar(140)), 
+        geom_text(aes(x = 10.5, y = 143, label = scales::dollar(140)), 
                   colour="purple", text = element_text(size=11), show.legend = F) +
-        geom_text(aes(x = 10.5, y = 162, label = scales::dollar(160)), 
+        geom_text(aes(x = 10.5, y = 163, label = scales::dollar(160)), 
                   colour="purple", text = element_text(size=11), show.legend = F) +
-        geom_vline(xintercept = 1:15 * 7, linetype = 'longdash', color = 'grey') +
         geom_line(aes(x = days_before, y = lowest_price, color = flight_date, 
-                      text = label, linetype = flight_date), size = 1) +
+                      text = txtlabel, linetype = flight_date), size = 1) +
         scale_linetype_manual(values = c(1,1,1),
                               labels = unique(d$flight_date)) +
         scale_x_reverse(breaks = seq(15*7, 0, -7)) +
         scale_y_continuous(breaks = seq(125, 225, 25),
                            labels = scales::dollar_format(),
-                           limits = c(NA, 235)) +
-        geom_point(data = nomids, aes(x = days_before, y = lowest_price, text = label,
+                           limits = c(NA, 230)) +
+        geom_point(data = nomids, aes(x = days_before, y = lowest_price, text = txtlabel,
                                       color = flight_date, shape = flight_date), size = 2.5) +
         scale_shape_manual(values = c(16,17,18)) +
         scale_color_manual(values = c(4,6,3)) +
         theme_minimal()) %>%
-  ggplotly(tooltip = 'label') %>%
-  layout(legend = list(title = list(text = "Flight Date")),
+  ggplotly(tooltip = 'txtlabel') %>%
+  layout(legend = list(title = list(text = "Flight Date"),
+                       orientation = 'h', xanchor = 'left'
+                       ),
          title = list(text = "Flight Prices vs. Weeks Before Departure",
-                      x = 0.5, y = 0.96),
-         xaxis = list(title = 'Weeks Before Departure',
+                      x = 0.5, y = 0.98
+                      ),
+         xaxis = list(title = list(text = 'Date Recorded',
+                                   font = axis_font,
+                                   standoff = 50),
                       ticktext = as.list(paste(xlabels)),
                       tickmode = 'array'),
-         yaxis = list(title = 'Lowest Price'),
+         yaxis = list(title = list(text = 'Lowest Price',
+                                   font = axis_font)),
          height = 400
   )
 
@@ -152,29 +161,34 @@ I wanted to also make a plot of prices against the date they were observed.
 
 ```{r}
 recorded <- (d %>%
-  filter(!is.na(lowest_price)) %>%
+  filter(!is.na(lowest_price), date_recorded <= '2024-02-23') %>%
   ggplot(aes(group = 1)) +
     geom_hline(yintercept = c(120,140,160), linetype = "longdash", color = "purple") +
     geom_line(aes(x = date_recorded, y = lowest_price, color = flight_date, 
-                      text = label, linetype = flight_date), size = 1) +
+                      text = txtlabel, linetype = flight_date), size = 1) +
     scale_linetype_manual(values = c(1,1,1),
                           labels = unique(d$flight_date)) +
     scale_color_manual(values = c(4,6,3)) +
     scale_fill_manual(values = c(4,6,3)) +
     scale_y_continuous(breaks = seq(125, 225, 25),
                        labels = scales::dollar_format()) +
-    geom_point(data = nomids, aes(x = date_recorded, y = lowest_price, text = label,
+    geom_point(data = nomids, aes(x = date_recorded, y = lowest_price, text = txtlabel,
                                   color = flight_date, shape = flight_date), size = 2.5) +
     scale_shape_manual(values = c(16,17,18)) +
     theme_minimal()) %>%
   ggplotly(
-    tooltip = 'label'
+    tooltip = 'txtlabel'
     ) %>%
-  layout(legend = list(title = list(text = "Flight Date")),
+  layout(legend = list(title = list(text = "Flight Date"),
+                       orientation = 'h', xanchor = 'left'
+                       ),
          title = list(text = "Flight Prices vs. Date Recorded",
                       x = 0.5, y = 0.96),
-         xaxis = list(title = 'Date Recorded'),
-         yaxis = list(title = 'Lowest Price'),
+         xaxis = list(title = list(text = 'Date Recorded',
+                                   font = axis_font,
+                                   standoff = 50)),
+         yaxis = list(title = list(text= 'Lowest Price',
+                                   font = axis_font)),
          height = 400
   )
 rplt <- plotly_build(recorded)
@@ -189,10 +203,14 @@ Weirdly enough, it looks like March 25 and April 8 have been following the same 
 Here is the same information using a different type of interactive feature: a vertical line that follows the cursor. This is useful for comparing the prices that were recorded on the same day for each of the flights.
 
 ```{r}
-mar18 <- d[d$flight_date == '03-18-2024' & !is.na(d$lowest_price), 'lowest_price']
-mar25 <- d[d$flight_date == '03-25-2024' & !is.na(d$lowest_price), 'lowest_price']
-apr08 <- d[d$flight_date == '04-08-2024' & !is.na(d$lowest_price), 'lowest_price']
-dates <- d[d$flight_date == '04-08-2024' & !is.na(d$lowest_price), 'date_recorded']
+mar18 <- d[d$flight_date == '03-18-2024' & !is.na(d$lowest_price) & d$date_recorded <= '2024-02-23',
+           'lowest_price']
+mar25 <- d[d$flight_date == '03-25-2024' & !is.na(d$lowest_price) & d$date_recorded <= '2024-02-23',
+           'lowest_price']
+apr08 <- d[d$flight_date == '04-08-2024' & !is.na(d$lowest_price) & d$date_recorded <= '2024-02-23',
+           'lowest_price']
+dates <- d[d$flight_date == '04-08-2024' & !is.na(d$lowest_price) & d$date_recorded <= '2024-02-23',
+           'date_recorded']
 
 data <- data.frame(dates, mar18, mar25, apr08)
 
@@ -202,7 +220,9 @@ fig <- fig %>% add_trace(y = ~apr08, name = 'April 08', mode = 'markers')
 fig <- fig %>%
   layout(hovermode = "x unified",
          hoverlabel = list(align = "right"),
-         legend = list(title = list(text = "Flight Date")),
+         legend = list(title = list(text = "Flight Date"),
+                       xanchor = 'left',
+                       yanchor = 'bottom'),
          title = list(text = "Flight Prices vs. Date Recorded",
                       x = 0.5, y = 0.96),
          xaxis = list(title = "Date Recorded"),
