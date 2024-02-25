@@ -221,14 +221,13 @@ fig <- fig %>% add_trace(y = ~apr08, name = 'April 08', mode = 'markers')
 fig <- fig %>%
   layout(hovermode = "x unified",
          hoverlabel = list(align = "right"),
-         legend = list(title = list(text = "Flight Date"),
-                       xanchor = 'left',
-                       yanchor = 'bottom'),
+         legend = list(title = list(text = "Flight Date")),
          title = list(text = "Flight Prices vs. Date Recorded",
-                      x = 0.5, y = 0.96),
+                      x = 0.5, y = 0.98),
          xaxis = list(title = "Date Recorded"),
          yaxis = list(title = "Lowest Price",
-                      tickprefix = "$"),
+                      tickprefix = "$",
+                      range = list(110, 230)),
          height = 400
   )
 div(fig, align = 'center')
