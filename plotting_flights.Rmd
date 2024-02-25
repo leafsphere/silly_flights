@@ -165,7 +165,7 @@ recorded <- (d %>%
   ggplot(aes(group = 1)) +
     geom_hline(yintercept = c(120,140,160), linetype = "longdash", color = "purple") +
     geom_line(aes(x = date_recorded, y = lowest_price, color = flight_date, 
-                      text = txtlabel, linetype = flight_date), size = 1) +
+                      linetype = flight_date), size = 1, alpha = 0.5) +
     scale_linetype_manual(values = c(1,1,1),
                           labels = unique(d$flight_date)) +
     scale_color_manual(values = c(4,6,3)) +
