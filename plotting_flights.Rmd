@@ -134,7 +134,7 @@ g <- (d %>%
          title = list(text = "Flight Prices vs. Weeks Before Departure",
                       x = 0.5, y = 0.98
                       ),
-         xaxis = list(title = list(text = 'Date Recorded',
+         xaxis = list(title = list(text = '# of Weeks in Advance Recorded',
                                    font = axis_font,
                                    standoff = 50),
                       ticktext = as.list(paste(xlabels)),
