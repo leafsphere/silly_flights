@@ -15,13 +15,13 @@ library(shiny)
 
 # Motivation
 
-Are you a broke college student? Have you ever wondered when the heck flight prices drop, and if there is such thing as an *optimal time* to splurge on tickets to see your long distance partner? This started off as an obsessive screenshotting extravaganza that involved opening Google Flights, searching up the desired flight, and copy + pasting the price history graphs of the exact same flight path on the same day of the week but also for the weeks before and after the desired date. That information still resides in my initial mess of a Google Docs file, but I've decided that it would be a shame of me as a data scientist and MS Candidate to keep eyeballing everything instead of just making my own damn graphs in R, so now I've regretfully taken it to the next level by fiddling with R code and making this a more official-looking data science project. 
+Are you a broke college student? Have you ever wondered when the heck flight prices drop, and if there is such thing as an *optimal time* to splurge on tickets to see your long distance partner? This started off as an obsessive screenshotting extravaganza that involved opening Google Flights, searching up the desired flight, and copy + pasting the price history graphs of the exact same flight path on the same day of the week but also for the weeks before and after the desired date. That information still resides in my initial mess of a Google Docs file, but I've decided that it would be a shame of me as a data scientist and MS Candidate to keep eyeballing everything instead of just making my own graphs in R, so now I've regretfully taken it to the next level by fiddling with R code and making this a more official-looking data science project. 
 
 # Methodology
 
-I've been tracking flight prices from Newark Liberty International Airport (EWR) to Minneapolis-St. Paul International Airport (MSP) for the following Mondays: March 18, March 25, April 8, and April 15, 2024. Specifically, I've been logging (no, not the math definition) the lowest price for a one-way nonstop ticket for each day. My data comes from Google Flights, though I've noticed a few discrepencies in their data: a few days ago, the website highlighted Sun Country Airlines for having the alleged lowest price (on another flight I was looking at, but not any of the ones in this analysis), but they actually had already increased that original price from the previous day, so Google was wrong(!!). However, I expect this to be a rare occurrence, so I'm not that worried about the data being too inconsistent. 
+I've been tracking flight prices from Newark Liberty International Airport (EWR) to Minneapolis-St. Paul International Airport (MSP) for the following Mondays: March 18, March 25, April 8, and April 15, 2024. Specifically, I've been logging (no, not the math definition) the lowest price for a one-way nonstop ticket for each day. Most of my data come from Google Flights, though I've noticed a few discrepencies in their data: a few days ago, the website highlighted Sun Country Airlines for having the alleged lowest price (on another flight I was looking at, but not any of the ones in this analysis), but they actually had already increased that original price from the previous day, so Google was wrong(!!). [3/5/24 Update: There also are a few other discrepencies between the Google Flight history and my own records near the end of Feburary, aka when I was able to look up the flights on United.com myself and just screenshot the fare calendar and record the numbers in my CSV files. However, I expect most of the past data to be accurate.]
 
-The prices I've been tracking on the four departure days are each contained in their own CSV file. My desired flight is the one on April 8. I skipped April 1, since those prices seemed a lot higher overall, likely due to Easter weekend. Though I tracked April 15's prices since it is the following week's Monday, I didn't end up using it, since Sun Country's flight would have been the cheapest one, and they don't have any flights for the other three Mondays (whose flights are mainly operated by Delta and United Airlines). Sun Country is known for being a budget airline that offers flights to and from MSP, so I omitted April 15 from my analysis. (I still loaded in the data, though.)
+The prices I've been tracking on the four departure days are each contained in their own CSV file. My desired flight is the one on April 8. I skipped April 1, since those prices seemed a lot higher overall, likely due to Easter weekend. Though I tracked April 15's prices since it is the following week's Monday, I didn't end up using it, since Sun Country's flight would have been the cheapest one, and they don't have any flights for the other three Mondays in the dataset (whose flights are mainly operated by Delta and United Airlines). Sun Country is known for being a budget airline that offers flights to and from MSP, so I omitted April 15 from my analysis. (It's still loaded in the data, though.)
 
 # Data Preprocessing
 
@@ -65,11 +65,11 @@ d %>%
   head()
 ```
 
-For the record, I didn't actually start recording dates until four days ago, but Google Flights price history can go back as far as 60 days. Let's just say that `date_recorded` corresponds to the day you would have known what the cheapest price was, even though we acknowledge having this retrospective power in our hands. This column will be useful for one of my plots below... stay tuned!
+For the record, I didn't actually start recording dates until four days ago (February 19), but Google Flights price history can go back as far as 60 days. Let's just say that `date_recorded` corresponds to the day you would have known what the cheapest price was, even though we acknowledge having this retrospective power in our hands. This column will be useful for one of my plots below... stay tuned!
 
 I'll also make a subset of the data that only contains the observations that aren't the same as the preceding or following day's lowest price, which will be useful for adding markers to our line plots.
 
-```{r}
+```{r, echo}
 # thanks to
 # https://stackoverflow.com/questions/37610056/how-to-treat-nas-like-values-when-comparing-elementwise-in-r
 # for the `%!=na%` function, to compare numbers to NA's
@@ -97,7 +97,7 @@ Oof, this is a lot of code. I'm going to try to make this as interactive as poss
 
 Hovering over the lines/markers will show how many days before departure date and the cheapest price before recorded.
 
-```{r}
+```{r, echo = F}
 maxdays  <- max(d[!is.na(d$lowest_price),]$days_before)
 maxweeks <- maxdays - (maxdays %% 7)
 xlabels  <- (maxweeks/7):0
@@ -134,7 +134,7 @@ g <- (d %>%
          title = list(text = "Flight Prices vs. Weeks Before Departure",
                       x = 0.5, y = 0.98
                       ),
-         xaxis = list(title = list(text = '# of Weeks in Advance Recorded',
+         xaxis = list(title = list(text = '# of Weeks Before Departure',
                                    font = axis_font,
                                    standoff = 50),
                       ticktext = as.list(paste(xlabels)),
@@ -159,7 +159,7 @@ As of February 23, we are about 6.5 weeks before departure. The last substantial
 
 I wanted to also make a plot of prices against the date they were observed.
 
-```{r}
+```{r, echo = F}
 recorded <- (d %>%
   filter(!is.na(lowest_price), date_recorded <= '2024-02-23') %>%
   ggplot(aes(group = 1)) +
@@ -238,6 +238,166 @@ div(fig, align = 'center')
 
 As of Feburary 23, 45 days (or 6.5 weeks) before April 8, I am hoping that the cheapest price will make one final drop sometime next week. I hope this won't come back to bite me in the butt, but I shall wait until then to buy the ticket.
 
+
+# [3/5/24] Update
+
+11 days later... I have reappeared from the shadows to report that the prices have indeed dropped! Well, price (singular) would be more accurate, since the cheapest nonstop price on March 18 and March 25 jumped by about $80 today, while that of April 8 dropped by $80. 
+
+It's been a tense week and a half waiting on April 8's price to drop, especially on February 25, when all other prices dropped to a reasonable price EXCEPT for April 8. I was so puzzled as to why it didn't drop, and I wondered if I too blindly trusted this extremely tiny dataset of two preceding Mondays' three months worth of price history... but I'm glad I waited, because it not only dropped but dropped to a price I'd be willing to pay.
+
+
+```{r, echo = F}
+today <- '2024-03-05'
+mar18 <- d[d$flight_date == '03-18-2024' & !is.na(d$lowest_price) & d$date_recorded <= today,
+           'lowest_price']
+mar25 <- d[d$flight_date == '03-25-2024' & !is.na(d$lowest_price) & d$date_recorded <= today,
+           'lowest_price']
+apr08 <- d[d$flight_date == '04-08-2024' & !is.na(d$lowest_price) & d$date_recorded <= today,
+           'lowest_price']
+dates <- d[d$flight_date == '04-08-2024' & !is.na(d$lowest_price) & d$date_recorded <= today,
+           'date_recorded']
+
+data <- data.frame(dates, mar18, mar25, apr08)
+
+fig <- plot_ly(data, x = ~dates, y = ~mar18, name = 'March 18', type = 'scatter', mode = 'lines') 
+fig <- fig %>% add_trace(y = ~mar25, name = 'March 25', mode = 'lines+markers') 
+fig <- fig %>% add_trace(y = ~apr08, name = 'April 08', mode = 'markers')
+fig <- fig %>%
+  layout(hovermode = "x unified",
+         hoverlabel = list(align = "right"),
+         legend = list(title = list(text = "Flight Date")),
+         title = list(text = "Flight Prices vs. Date Recorded",
+                      x = 0.5, y = 0.98),
+         xaxis = list(title = "Date Recorded"),
+         yaxis = list(title = "Lowest Price",
+                      tickprefix = "$"),
+         height = 400
+  )
+div(fig, align = 'center')
+```
+
+In the following plot, I chopped off the top of the y-axis to make the numbers easier to read, but for the record, after Feburary 26, the price for March 18 jumped to $305, and today (March 5), the price for March 25 jumped to $305:
+
+```{r, echo = F}
+nomids <- d %>%
+  filter(date_recorded <= today) %>%
+  group_by(flight_date) %>%
+  mutate(prev = lag(lowest_price), follow = lead(lowest_price)) %>%
+  mutate(keep = (prev %!=na% lowest_price | follow %!=na% lowest_price)) %>%
+  filter(keep) %>%
+  ungroup()
+
+recorded <- (d %>%
+  filter(!is.na(lowest_price), date_recorded <= today) %>%
+  ggplot(aes(group = 1)) +
+    geom_hline(yintercept = c(120,140,160), linetype = "longdash", color = "purple") +
+    geom_line(aes(x = date_recorded, y = lowest_price, color = flight_date, 
+                      linetype = flight_date), size = 1, alpha = 0.5) +
+    scale_linetype_manual(values = c(1,1,1),
+                          labels = unique(d$flight_date)) +
+    scale_color_manual(values = c(4,6,3)) +
+    scale_fill_manual(values = c(4,6,3)) +
+    scale_y_continuous(breaks = seq(125, 400, 25),
+                       labels = scales::dollar_format(),
+                       limits = c(NA, 230)) +
+    geom_point(data = nomids, aes(x = date_recorded, y = lowest_price, text = txtlabel, 
+                                  color = flight_date, shape = flight_date), size = 2.5, alpha = 0.9) +
+    scale_shape_manual(values = c(16,17,18)) +
+    theme_minimal()) %>%
+  ggplotly(
+    tooltip = 'txtlabel'
+    ) %>%
+  layout(legend = list(title = list(text = "Flight Date"),
+                       orientation = 'h', xanchor = 'left'
+                       ),
+         title = list(text = "Flight Prices vs. Date Recorded",
+                      x = 0.5, y = 0.96),
+         xaxis = list(title = list(text = 'Date Recorded',
+                                   font = axis_font,
+                                   standoff = 50)),
+         yaxis = list(title = list(text= 'Lowest Price',
+                                   font = axis_font)),
+         height = 400
+  )
+rplt <- plotly_build(recorded)
+rplt$x$data[[2]]$name <- "03-18-2024"
+rplt$x$data[[3]]$name <- "03-25-2024"
+rplt$x$data[[4]]$name <- "04-08-2024"
+div(rplt, align = 'center')
+```
+
+
+I was really expecting a price drop for April 8 about 5.5 weeks before the departure date, but it ended up happening under 5 weeks from the departure date, as seen in the updated plot below (green). It's not good for the heart to rely on price drops within 5 weeks or less before the departure date, but it seemed to work out this time. (Phew!) Below, the y-axis is chopped off once again:
+
+
+```{r, echo = F}
+today <- '2024-03-05'
+
+# discard "middle" prices
+nomids <- d %>%
+  filter(date_recorded <= today) %>%
+  group_by(flight_date) %>%
+  mutate(prev = lag(lowest_price), follow = lead(lowest_price)) %>%
+  mutate(keep = (prev %!=na% lowest_price | follow %!=na% lowest_price)) %>%
+  filter(keep) %>%
+  ungroup()
+
+maxdays  <- max(d[!is.na(d$lowest_price),]$days_before)
+maxweeks <- maxdays - (maxdays %% 7)
+xlabels  <- (maxweeks/7):0
+axis_font <- list(size = 18)
+
+g <- (d %>%
+        filter(!is.na(lowest_price), date_recorded <= today) %>%
+        ggplot(aes(group = 1)) +
+        geom_vline(xintercept = 1:15 * 7, color = 'lightgrey', size = .3) +
+        geom_hline(yintercept = c(120,140,160), linetype = "longdash", color = "purple") +
+        geom_text(aes(x = 10.5, y = 123, label = scales::dollar(120)), 
+                  colour="purple", text = element_text(size=11), show.legend = F) +
+        geom_text(aes(x = 10.5, y = 143, label = scales::dollar(140)), 
+                  colour="purple", text = element_text(size=11), show.legend = F) +
+        geom_text(aes(x = 10.5, y = 163, label = scales::dollar(160)), 
+                  colour="purple", text = element_text(size=11), show.legend = F) +
+        geom_line(aes(x = days_before, y = lowest_price, color = flight_date, 
+                      text = txtlabel, linetype = flight_date), size = 1) +
+        scale_linetype_manual(values = c(1,1,1),
+                              labels = unique(d$flight_date)) +
+        scale_x_reverse(breaks = seq(15*7, 0, -7)) +
+        scale_y_continuous(breaks = seq(125, 225, 25),
+                           labels = scales::dollar_format(),
+                           limits = c(NA, 230)) +
+        geom_point(data = nomids, aes(x = days_before, y = lowest_price, text = txtlabel,
+                                      color = flight_date, shape = flight_date), size = 2.5) +
+        scale_shape_manual(values = c(16,17,18)) +
+        scale_color_manual(values = c(4,6,3)) +
+        theme_minimal()) %>%
+  ggplotly(tooltip = 'txtlabel') %>%
+  layout(legend = list(title = list(text = "Flight Date"),
+                       orientation = 'h', xanchor = 'left'
+                       ),
+         title = list(text = "Flight Prices vs. Weeks Before Departure",
+                      x = 0.5, y = 0.98
+                      ),
+         xaxis = list(title = list(text = '# of Weeks Before Departure',
+                                   font = axis_font,
+                                   standoff = 50),
+                      ticktext = as.list(paste(xlabels)),
+                      tickmode = 'array'),
+         yaxis = list(title = list(text = 'Lowest Price',
+                                   font = axis_font)),
+         height = 400
+  )
+
+# create plotly build object to manually rename legend labels
+plt <- plotly_build(g)
+plt$x$data[[6]]$name <- "03-18-2024"
+plt$x$data[[7]]$name <- "03-25-2024"
+plt$x$data[[8]]$name <- "04-08-2024"
+div(plt, align = 'center')
+```
+
+
+Lady Luck seemed to finally shine on me today. Or could this have been foreseen earlier? Whichever the case, I'm happy.
 
 # Special thanks...
 
