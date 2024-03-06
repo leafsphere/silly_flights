@@ -203,7 +203,7 @@ Weirdly enough, it looks like March 25 and April 8 have been following the same 
 
 Here is the same information using a different type of interactive feature: a vertical line that follows the cursor. This is useful for comparing the prices that were recorded on the same day for each of the flights.
 
-```{r}
+```{r, echo = F}
 mar18 <- d[d$flight_date == '03-18-2024' & !is.na(d$lowest_price) & d$date_recorded <= '2024-02-23',
            'lowest_price']
 mar25 <- d[d$flight_date == '03-25-2024' & !is.na(d$lowest_price) & d$date_recorded <= '2024-02-23',
